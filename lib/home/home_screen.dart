@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:warkopos/auth/profile_screen.dart';
 import 'package:warkopos/order/new_order_screen.dart';
+// Import halaman-halaman lain yang Anda butuhkan
+// import 'package:warkopos/history/history_screen.dart';
+// import 'package:warkopos/report/report_screen.dart';
+// import 'package:warkopos/settings/settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -41,11 +46,128 @@ class _HomeScreenState extends State<HomeScreen> {
       'title': 'Pesanan Baru',
       'icon': Icons.add_shopping_cart,
       'color': Colors.blue,
+      'route': 'new_order',
     },
-    {'title': 'Riwayat', 'icon': Icons.history, 'color': Colors.teal},
-    {'title': 'Laporan', 'icon': Icons.assessment, 'color': Colors.indigo},
-    {'title': 'Pengaturan', 'icon': Icons.settings, 'color': Colors.grey},
+    {
+      'title': 'Riwayat',
+      'icon': Icons.history,
+      'color': Colors.teal,
+      'route': 'history',
+    },
+    {
+      'title': 'Laporan',
+      'icon': Icons.assessment,
+      'color': Colors.indigo,
+      'route': 'report',
+    },
+    {
+      'title': 'Pengaturan',
+      'icon': Icons.settings,
+      'color': Colors.grey,
+      'route': 'settings',
+    },
   ];
+
+  // Fungsi untuk menangani navigasi berdasarkan route
+  void _handleQuickActionTap(String route) {
+    switch (route) {
+      case 'new_order':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => NewOrderScreen()),
+        );
+        break;
+      case 'history':
+        // Ganti dengan halaman riwayat yang sebenarnya
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => _buildPlaceholderScreen('Riwayat Pesanan'),
+          ),
+        );
+        // Uncomment jika sudah ada HistoryScreen
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => HistoryScreen()),
+        // );
+        break;
+      case 'report':
+        // Ganti dengan halaman laporan yang sebenarnya
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => _buildPlaceholderScreen('Laporan Penjualan'),
+          ),
+        );
+        // Uncomment jika sudah ada ReportScreen
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => ReportScreen()),
+        // );
+        break;
+      case 'settings':
+        // Ganti dengan halaman pengaturan yang sebenarnya
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => _buildPlaceholderScreen('Pengaturan'),
+          ),
+        );
+        // Uncomment jika sudah ada SettingsScreen
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(builder: (context) => SettingsScreen()),
+        // );
+        break;
+      default:
+        // Jika route tidak ditemukan, tampilkan snackbar
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Halaman belum tersedia')));
+    }
+  }
+
+  // Widget placeholder untuk halaman yang belum dibuat
+  Widget _buildPlaceholderScreen(String title) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        backgroundColor: Colors.brown[600],
+        foregroundColor: Colors.white,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.construction, size: 80, color: Colors.grey[400]),
+            SizedBox(height: 16),
+            Text(
+              'Halaman $title',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[600],
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Sedang dalam pengembangan',
+              style: TextStyle(fontSize: 16, color: Colors.grey[500]),
+            ),
+            SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.brown[600],
+                foregroundColor: Colors.white,
+              ),
+              child: Text('Kembali'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,9 +196,20 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              backgroundColor: Colors.brown[100],
-              child: Icon(Icons.person, color: Colors.brown[800]),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.brown.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: IconButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ProfileScreen()),
+                  );
+                },
+                icon: Icon(Icons.person, color: Colors.brown),
+              ),
             ),
           ),
         ],
@@ -276,7 +409,10 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: () {
+            // Panggil fungsi navigasi dengan route yang sesuai
+            _handleQuickActionTap(action['route']);
+          },
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -325,8 +461,7 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-          },
+          onTap: () {},
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
