@@ -1,4 +1,112 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
+import 'package:intl/intl.dart';
+
+// Model classes
+class Kategori {
+  final int id;
+  final String kodeKategori;
+  final String nama;
+
+  Kategori({required this.id, required this.kodeKategori, required this.nama});
+
+  factory Kategori.fromJson(Map<String, dynamic> json) {
+    return Kategori(
+      id: json['id'],
+      kodeKategori: json['kode_kategori'],
+      nama: json['nama'],
+    );
+  }
+}
+
+class Produk {
+  final int id;
+  final String hargaBarang;
+  final String kodeBarang;
+  final String namaBarang;
+  final String? gambarProduk;
+  final int kategoriId;
+  final int stok;
+  final String status;
+
+  Produk({
+    required this.id,
+    required this.hargaBarang,
+    required this.kodeBarang,
+    required this.namaBarang,
+    this.gambarProduk,
+    required this.kategoriId,
+    required this.stok,
+    required this.status,
+  });
+
+  factory Produk.fromJson(Map<String, dynamic> json) {
+    return Produk(
+      id: json['id'],
+      hargaBarang: json['harga_barang'],
+      kodeBarang: json['kode_barang'],
+      namaBarang: json['nama_barang'],
+      gambarProduk: json['gambar_produk'],
+      kategoriId: json['kategori_id'],
+      stok: json['stok'],
+      status: json['status'],
+    );
+  }
+}
+
+// API Service
+class ApiService {
+  static const String baseUrl =
+      'https://6241-114-10-66-13.ngrok-free.app/api/mobile'; // Ganti dengan URL API Anda
+
+  static Future<List<Kategori>> getKategoriList() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/list_kategori'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success']) {
+          List<Kategori> kategoriList =
+              (data['data'] as List)
+                  .map((item) => Kategori.fromJson(item))
+                  .toList();
+          return kategoriList;
+        }
+      }
+      throw Exception('Failed to load categories');
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  static Future<List<Produk>> getProdukList() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/list_produk'),
+        headers: {'Content-Type': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success']) {
+          List<Produk> produkList =
+              (data['data'] as List)
+                  .map((item) => Produk.fromJson(item))
+                  .toList();
+          return produkList;
+        }
+      }
+      throw Exception('Failed to load products');
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+}
 
 class NewOrderScreen extends StatefulWidget {
   const NewOrderScreen({super.key});
@@ -9,75 +117,93 @@ class NewOrderScreen extends StatefulWidget {
 
 class _NewOrderScreenState extends State<NewOrderScreen>
     with TickerProviderStateMixin {
-  late TabController _tabController;
+  TabController? _tabController;
   final List<Map<String, dynamic>> orderItems = [];
   double totalAmount = 0.0;
 
-  final List<Map<String, dynamic>> menuCategories = [
-    {'title': 'Kopi', 'icon': Icons.local_cafe, 'color': Colors.brown},
-    {'title': 'Teh', 'icon': Icons.emoji_food_beverage, 'color': Colors.green},
-    {'title': 'Makanan', 'icon': Icons.restaurant, 'color': Colors.orange},
-    {'title': 'Snack', 'icon': Icons.bakery_dining, 'color': Colors.purple},
-  ];
-
-  final Map<String, List<Map<String, dynamic>>> menuItems = {
-    'Kopi': [
-      {'name': 'Kopi Tubruk', 'price': 8000, 'image': '☕'},
-      {'name': 'Kopi Susu', 'price': 12000, 'image': '☕'},
-      {'name': 'Espresso', 'price': 15000, 'image': '☕'},
-      {'name': 'Cappuccino', 'price': 18000, 'image': '☕'},
-      {'name': 'Latte', 'price': 20000, 'image': '☕'},
-      {'name': 'Americano', 'price': 16000, 'image': '☕'},
-    ],
-    'Teh': [
-      {'name': 'Teh Manis', 'price': 5000, 'image': '🍵'},
-      {'name': 'Teh Tawar', 'price': 3000, 'image': '🍵'},
-      {'name': 'Es Teh', 'price': 6000, 'image': '🧊'},
-      {'name': 'Teh Susu', 'price': 8000, 'image': '🍵'},
-    ],
-    'Makanan': [
-      {'name': 'Nasi Goreng', 'price': 25000, 'image': '🍛'},
-      {'name': 'Mie Ayam', 'price': 20000, 'image': '🍜'},
-      {'name': 'Ayam Bakar', 'price': 30000, 'image': '🍗'},
-      {'name': 'Gado-gado', 'price': 18000, 'image': '🥗'},
-    ],
-    'Snack': [
-      {'name': 'Pisang Goreng', 'price': 10000, 'image': '🍌'},
-      {'name': 'Tahu Isi', 'price': 8000, 'image': '🥟'},
-      {'name': 'Keripik', 'price': 5000, 'image': '🍟'},
-      {'name': 'Roti Bakar', 'price': 12000, 'image': '🍞'},
-    ],
-  };
+  List<Kategori> kategoriList = [];
+  List<Produk> produkList = [];
+  bool isLoading = true;
+  String errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: menuCategories.length, vsync: this);
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      final kategoriFuture = ApiService.getKategoriList();
+      final produkFuture = ApiService.getProdukList();
+
+      final results = await Future.wait([kategoriFuture, produkFuture]);
+
+      setState(() {
+        kategoriList = results[0] as List<Kategori>;
+        produkList = results[1] as List<Produk>;
+        isLoading = false;
+      });
+
+      // Initialize tab controller after data is loaded
+      if (kategoriList.isNotEmpty) {
+        _tabController?.dispose(); // Dispose previous controller if exists
+        _tabController = TabController(
+          length: kategoriList.length,
+          vsync: this,
+        );
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
-  void _addToOrder(Map<String, dynamic> item) {
+  List<Produk> _getProdukByKategori(int kategoriId) {
+    return produkList
+        .where((produk) => produk.kategoriId == kategoriId)
+        .toList();
+  }
+
+  void _addToOrder(Produk produk) {
     setState(() {
       int existingIndex = orderItems.indexWhere(
-        (orderItem) => orderItem['name'] == item['name'],
+        (orderItem) => orderItem['id'] == produk.id,
       );
 
       if (existingIndex != -1) {
         orderItems[existingIndex]['quantity']++;
       } else {
-        orderItems.add({...item, 'quantity': 1});
+        orderItems.add({
+          'id': produk.id,
+          'name': produk.namaBarang,
+          'price':
+              produk.hargaBarang, // Anda perlu menambahkan field harga di API
+          'image': produk.gambarProduk,
+          'quantity': 1,
+          'stok': produk.stok,
+        });
       }
 
       _calculateTotal();
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${item['name']} ditambahkan ke pesanan'),
+        content: Text('${produk.namaBarang} ditambahkan ke pesanan'),
         duration: const Duration(seconds: 1),
         backgroundColor: Colors.green,
       ),
@@ -176,47 +302,129 @@ class _NewOrderScreenState extends State<NewOrderScreen>
                 ],
               ),
             ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          labelColor: Colors.brown[800],
-          unselectedLabelColor: Colors.grey[600],
-          indicatorColor: Colors.brown[600],
-          tabs:
-              menuCategories.map((category) {
-                return Tab(
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(category['icon'], size: 18),
-                      const SizedBox(width: 8),
-                      Text(category['title']),
-                    ],
-                  ),
-                );
-              }).toList(),
-        ),
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children:
-                  menuCategories.map((category) {
-                    final items = menuItems[category['title']] ?? [];
-                    return _buildMenuGrid(items, category['color']);
-                  }).toList(),
-            ),
+          IconButton(
+            icon: Icon(Icons.refresh, color: Colors.brown[800]),
+            onPressed: _loadData,
           ),
-          if (orderItems.isNotEmpty) _buildOrderSummaryBar(),
         ],
+        bottom:
+            isLoading || _tabController == null
+                ? null
+                : PreferredSize(
+                  preferredSize: const Size.fromHeight(48),
+                  child: TabBar(
+                    controller: _tabController!,
+                    isScrollable: true,
+                    labelColor: Colors.brown[800],
+                    unselectedLabelColor: Colors.grey[600],
+                    indicatorColor: Colors.brown[600],
+                    tabs:
+                        kategoriList.map((kategori) {
+                          return Tab(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(_getKategoriIcon(kategori.nama), size: 18),
+                                const SizedBox(width: 8),
+                                Text(kategori.nama),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                  ),
+                ),
       ),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildMenuGrid(List<Map<String, dynamic>> items, Color categoryColor) {
+  Widget _buildBody() {
+    if (isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Memuat data...'),
+          ],
+        ),
+      );
+    }
+
+    if (errorMessage.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+            const SizedBox(height: 16),
+            Text(
+              'Terjadi kesalahan',
+              style: TextStyle(fontSize: 18, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              errorMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadData,
+              child: const Text('Coba Lagi'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (kategoriList.isEmpty) {
+      return const Center(child: Text('Tidak ada kategori tersedia'));
+    }
+
+    return Column(
+      children: [
+        Expanded(
+          child:
+              _tabController != null
+                  ? TabBarView(
+                    controller: _tabController!,
+                    children:
+                        kategoriList.map((kategori) {
+                          final produkKategori = _getProdukByKategori(
+                            kategori.id,
+                          );
+                          return _buildMenuGrid(
+                            produkKategori,
+                            _getKategoriColor(kategori.nama),
+                          );
+                        }).toList(),
+                  )
+                  : const Center(child: CircularProgressIndicator()),
+        ),
+        if (orderItems.isNotEmpty) _buildOrderSummaryBar(),
+      ],
+    );
+  }
+
+  Widget _buildMenuGrid(List<Produk> produkList, Color categoryColor) {
+    if (produkList.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Tidak ada produk tersedia',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: GridView.builder(
@@ -226,16 +434,16 @@ class _NewOrderScreenState extends State<NewOrderScreen>
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        itemCount: items.length,
+        itemCount: produkList.length,
         itemBuilder: (context, index) {
-          final item = items[index];
-          return _buildMenuItem(item, categoryColor);
+          final produk = produkList[index];
+          return _buildMenuItem(produk, categoryColor);
         },
       ),
     );
   }
 
-  Widget _buildMenuItem(Map<String, dynamic> item, Color categoryColor) {
+  Widget _buildMenuItem(Produk produk, Color categoryColor) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -252,7 +460,7 @@ class _NewOrderScreenState extends State<NewOrderScreen>
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () => _addToOrder(item),
+          onTap: produk.stok > 0 ? () => _addToOrder(produk) : null,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Column(
@@ -265,16 +473,54 @@ class _NewOrderScreenState extends State<NewOrderScreen>
                     color: categoryColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Center(
-                    child: Text(
-                      item['image'],
-                      style: const TextStyle(fontSize: 40),
-                    ),
-                  ),
+                  child:
+                      produk.gambarProduk != null
+                          ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.network(
+                              produk.gambarProduk!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    color: Colors.grey[400],
+                                    size: 32,
+                                  ),
+                                );
+                              },
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value:
+                                        loadingProgress.expectedTotalBytes !=
+                                                null
+                                            ? loadingProgress
+                                                    .cumulativeBytesLoaded /
+                                                loadingProgress
+                                                    .expectedTotalBytes!
+                                            : null,
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                          : Center(
+                            child: Icon(
+                              Icons.image,
+                              color: Colors.grey[400],
+                              size: 32,
+                            ),
+                          ),
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  item['name'],
+                  produk.namaBarang,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -283,26 +529,43 @@ class _NewOrderScreenState extends State<NewOrderScreen>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  'Harga: ${produk.hargaBarang}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color:
+                        produk.stok > 0 ? Colors.green[600] : Colors.red[600],
+                  ),
+                ),
+
+                const SizedBox(height: 4),
+                Text(
+                  'Stok: ${produk.stok}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color:
+                        produk.stok > 0 ? Colors.green[600] : Colors.red[600],
+                  ),
+                ),
                 const Spacer(),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Rp ${item['price'].toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.')}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: categoryColor,
+                    Expanded(
+                      child: Text(
+                        'Tambah Pesanan',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: categoryColor,
+                        color: produk.stok > 0 ? categoryColor : Colors.grey,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.add,
+                      child: Icon(
+                        produk.stok > 0 ? Icons.add : Icons.block,
                         color: Colors.white,
                         size: 16,
                       ),
@@ -389,8 +652,6 @@ class _NewOrderScreenState extends State<NewOrderScreen>
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-
-          // Header
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -494,6 +755,29 @@ class _NewOrderScreenState extends State<NewOrderScreen>
       ),
       child: Row(
         children: [
+          if (item['image'] != null)
+            Container(
+              width: 50,
+              height: 50,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey[200],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  item['image'],
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey[400],
+                    );
+                  },
+                ),
+              ),
+            ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -540,7 +824,13 @@ class _NewOrderScreenState extends State<NewOrderScreen>
                 ),
               ),
               IconButton(
-                onPressed: () => _addToOrder(item),
+                onPressed: () {
+                  // Find the product and add to order
+                  final produk = produkList.firstWhere(
+                    (p) => p.id == item['id'],
+                  );
+                  _addToOrder(produk);
+                },
                 icon: const Icon(Icons.add_circle_outline),
                 color: Colors.brown[600],
               ),
@@ -580,5 +870,44 @@ class _NewOrderScreenState extends State<NewOrderScreen>
             ],
           ),
     );
+  }
+
+  // Helper methods
+  IconData _getKategoriIcon(String kategori) {
+    switch (kategori.toLowerCase()) {
+      case 'semua':
+        return Icons.food_bank;
+      case 'makanan berat':
+        return Icons.restaurant;
+      case 'makanan ringan':
+      case 'camilan':
+        return Icons.bakery_dining;
+      case 'minuman ringan':
+      case 'minuman':
+        return Icons.local_cafe;
+      case 'mie':
+        return Icons.ramen_dining;
+      default:
+        return Icons.category;
+    }
+  }
+
+  Color _getKategoriColor(String kategori) {
+    switch (kategori.toLowerCase()) {
+      case 'semua':
+        return Colors.green;
+      case 'makanan berat':
+        return Colors.orange;
+      case 'makanan ringan':
+      case 'camilan':
+        return Colors.purple;
+      case 'minuman ringan':
+      case 'minuman':
+        return Colors.blue;
+      case 'mie':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
   }
 }
