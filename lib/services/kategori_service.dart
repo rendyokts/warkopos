@@ -1,16 +1,14 @@
 import 'dart:convert';
 
+import 'package:warkopos/const/base_url.dart';
 import 'package:warkopos/models/kategori_produk.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-  static const String baseUrl =
-      'https://a625-114-10-66-13.ngrok-free.app/api/mobile';
-
   static Future<List<Kategori>> getKategoriList() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/list_kategori'),
+        Uri.parse('${BaseUrl.baseUrl}/list_kategori'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -33,7 +31,7 @@ class ApiService {
   static Future<List<Produk>> getProdukList() async {
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/list-produk'),
+        Uri.parse('${BaseUrl.baseUrl}/list_produk'),
         headers: {'Content-Type': 'application/json'},
       );
 

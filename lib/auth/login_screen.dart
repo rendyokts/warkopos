@@ -55,20 +55,28 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  // Fungsi untuk menyimpan token dan data user
-  Future<void> _saveUserData(Map<String, dynamic> userData) async {
+  // PERBAIKAN: Sesuaikan dengan struktur response API
+  Future<void> _saveUserData(Map<String, dynamic> responseData) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('auth_token', userData['token']);
-    await prefs.setString('token_type', userData['token_type']);
-    await prefs.setString('user_id', userData['user']['id'].toString());
-    await prefs.setString('user_name', userData['user']['name']);
-    await prefs.setString('user_email', userData['user']['email']);
-    if (userData['user']['username'] != null) {
-      await prefs.setString('user_username', userData['user']['username']);
-    }
+
+    // Token dan token_type ada di dalam data
+    await prefs.setString('auth_token', responseData['data']['token'] ?? '');
+    await prefs.setString(
+      'token_type',
+      responseData['data']['token_type'] ?? '',
+    );
+
+    // User data ada di dalam data.user
+    final userData = responseData['data']['user'];
+    await prefs.setInt('user_id', userData['id'] ?? 0);
+    await prefs.setString('user_name', userData['name'] ?? '');
+    await prefs.setString('user_email', userData['email'] ?? '');
+    await prefs.setString('user_username', userData['username'] ?? '');
+    await prefs.setString('user_telp', userData['telp'] ?? '');
+    await prefs.setString('user_role', userData['role'] ?? '');
+    await prefs.setString('user_status', userData['status'] ?? '');
   }
 
-  // Fungsi untuk login dengan API
   Future<void> _handleLogin() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -89,38 +97,33 @@ class _LoginScreenState extends State<LoginScreen>
         );
 
         final responseData = json.decode(response.body);
+        print('Response Data: $responseData'); // Debug print
 
         if (response.statusCode == 200 && responseData['success'] == true) {
-          // Login berhasil
-          await _saveUserData(responseData['data']);
+          await _saveUserData(responseData);
 
           if (mounted) {
-            // Tampilkan pesan sukses
             _showSnackBar(responseData['message'], Colors.green);
-
-            // Navigasi ke HomeScreen
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const HomeScreen()),
             );
           }
         } else {
-          // Login gagal
+          // PERBAIKAN: Handle error response dengan lebih baik
           String errorMessage = responseData['message'] ?? 'Login gagal';
-
           if (mounted) {
             _showSnackBar(errorMessage, Colors.red);
           }
         }
       } catch (e) {
-        // Error network atau parsing
+        print('Login Error: $e'); // Debug print
         if (mounted) {
           _showSnackBar(
             'Terjadi kesalahan jaringan. Periksa koneksi internet Anda.',
             Colors.red,
           );
         }
-        print('Login error: $e');
       } finally {
         if (mounted) {
           setState(() {
@@ -130,16 +133,20 @@ class _LoginScreenState extends State<LoginScreen>
       }
     }
   }
+
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: color,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
   }
 
   @override
@@ -186,9 +193,7 @@ class _LoginScreenState extends State<LoginScreen>
                             color: Colors.white,
                           ),
                         ),
-
                         const SizedBox(height: 24),
-
                         Text(
                           'Warkop Aceng',
                           style: TextStyle(
@@ -197,9 +202,7 @@ class _LoginScreenState extends State<LoginScreen>
                             color: Colors.brown[800],
                           ),
                         ),
-
                         const SizedBox(height: 8),
-
                         Text(
                           'Sistem Kasir Modern',
                           style: TextStyle(
@@ -248,7 +251,6 @@ class _LoginScreenState extends State<LoginScreen>
                               color: Colors.grey[600],
                             ),
                           ),
-
                           const SizedBox(height: 24),
                           TextFormField(
                             controller: _emailController,
@@ -282,10 +284,7 @@ class _LoginScreenState extends State<LoginScreen>
                               return null;
                             },
                           ),
-
                           const SizedBox(height: 16),
-
-                          // Password Field
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
@@ -332,9 +331,7 @@ class _LoginScreenState extends State<LoginScreen>
                               return null;
                             },
                           ),
-
                           const SizedBox(height: 24),
-
                           SizedBox(
                             width: double.infinity,
                             height: 50,

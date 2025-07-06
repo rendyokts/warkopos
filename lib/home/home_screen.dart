@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warkopos/auth/profile_screen.dart';
+import 'package:warkopos/const/base_url.dart';
+import 'package:warkopos/models/transaksi_harian.dart';
 import 'package:warkopos/order/new_order_screen.dart';
-// Import halaman-halaman lain yang Anda butuhkan
-// import 'package:warkopos/history/history_screen.dart';
-// import 'package:warkopos/report/report_screen.dart';
-// import 'package:warkopos/settings/settings_screen.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,32 +15,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Map<String, dynamic>> menuCategories = [
-    {
-      'title': 'Kopi',
-      'icon': Icons.local_cafe,
-      'color': Colors.brown,
-      'items': 15,
-    },
-    {
-      'title': 'Teh',
-      'icon': Icons.emoji_food_beverage,
-      'color': Colors.green,
-      'items': 8,
-    },
-    {
-      'title': 'Makanan',
-      'icon': Icons.restaurant,
-      'color': Colors.orange,
-      'items': 12,
-    },
-    {
-      'title': 'Snack',
-      'icon': Icons.bakery_dining,
-      'color': Colors.purple,
-      'items': 20,
-    },
-  ];
+  late Future<TransaksiHariIniResponse?> _futureData;
+  String? token;
 
   final List<Map<String, dynamic>> quickActions = [
     {
@@ -60,79 +37,100 @@ class _HomeScreenState extends State<HomeScreen> {
       'color': Colors.indigo,
       'route': 'report',
     },
-    {
-      'title': 'Pengaturan',
-      'icon': Icons.settings,
-      'color': Colors.grey,
-      'route': 'settings',
-    },
   ];
 
-  // Fungsi untuk menangani navigasi berdasarkan route
+  Future<void> _loadUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    token = prefs.getString('auth_token');
+    // print(token);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    await _loadUserData();
+    if (token != null) {
+      setState(() {
+        _futureData = fetchTotalTransaksiHarian(token!);
+      });
+    }
+  }
+
+  Future<TransaksiHariIniResponse?> fetchTotalTransaksiHarian(
+    String token,
+  ) async {
+    try {
+      final url = Uri.parse('${BaseUrl.baseUrl}/transaksi/harian');
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return TransaksiHariIniResponse.fromJson(data);
+      } else {
+        print('Gagal mengambil data: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('Error: $e');
+      return null;
+    }
+  }
+
   void _handleQuickActionTap(String route) {
     switch (route) {
       case 'new_order':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => NewOrderScreen()),
+          MaterialPageRoute(builder: (context) => ProductListScreen()),
         );
         break;
       case 'history':
-        // Ganti dengan halaman riwayat yang sebenarnya
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => _buildPlaceholderScreen('Riwayat Pesanan'),
           ),
         );
-        // Uncomment jika sudah ada HistoryScreen
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => HistoryScreen()),
-        // );
         break;
       case 'report':
-        // Ganti dengan halaman laporan yang sebenarnya
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => _buildPlaceholderScreen('Laporan Penjualan'),
           ),
         );
-        // Uncomment jika sudah ada ReportScreen
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => ReportScreen()),
-        // );
         break;
       case 'settings':
-        // Ganti dengan halaman pengaturan yang sebenarnya
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => _buildPlaceholderScreen('Pengaturan'),
           ),
         );
-        // Uncomment jika sudah ada SettingsScreen
-        // Navigator.push(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => SettingsScreen()),
-        // );
         break;
       default:
-        // Jika route tidak ditemukan, tampilkan snackbar
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Halaman belum tersedia')));
     }
   }
 
-  // Widget placeholder untuk halaman yang belum dibuat
   Widget _buildPlaceholderScreen(String title) {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: Colors.brown[600],
+        backgroundColor: Colors.blueAccent[600],
         foregroundColor: Colors.white,
       ),
       body: Center(
@@ -198,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
             margin: const EdgeInsets.only(right: 16),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.brown.withOpacity(0.2),
+                color: Colors.blue.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(30),
               ),
               child: IconButton(
@@ -208,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     MaterialPageRoute(builder: (context) => ProfileScreen()),
                   );
                 },
-                icon: Icon(Icons.person, color: Colors.brown),
+                icon: Icon(Icons.person, color: Colors.blueAccent),
               ),
             ),
           ),
@@ -224,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.brown[400]!, Colors.brown[600]!],
+                  colors: [Colors.blue[400]!, Colors.blue[600]!],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -263,24 +261,73 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          'Pesanan Hari Ini',
-                          '24',
-                          Icons.shopping_cart,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          'Total Penjualan',
-                          'Rp 450K',
-                          Icons.monetization_on,
-                        ),
-                      ),
-                    ],
+                  // Gunakan FutureBuilder untuk menampilkan data dari API
+                  FutureBuilder<TransaksiHariIniResponse?>(
+                    future: _futureData,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Pesanan Hari Ini',
+                                '...',
+                                Icons.shopping_cart,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Total Penjualan',
+                                '...',
+                                Icons.monetization_on,
+                              ),
+                            ),
+                          ],
+                        );
+                      } else if (snapshot.hasError || snapshot.data == null) {
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Pesanan Hari Ini',
+                                '0',
+                                Icons.shopping_cart,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Total Penjualan',
+                                'Rp 0',
+                                Icons.monetization_on,
+                              ),
+                            ),
+                          ],
+                        );
+                      } else {
+                        final data = snapshot.data!;
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: _buildStatCard(
+                                'Pesanan Hari Ini',
+                                '${data.jumlahTransaksi ?? 0}',
+                                Icons.shopping_cart,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _buildStatCard(
+                                'Total Penjualan',
+                                'Rp ${data.totalTransaksi ?? 0}',
+                                Icons.monetization_on,
+                              ),
+                            ),
+                          ],
+                        );
+                      }
+                    },
                   ),
                 ],
               ),
@@ -295,7 +342,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 12),
-
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -311,35 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return _buildQuickActionCard(action);
               },
             ),
-
             const SizedBox(height: 24),
-
-            // Menu Categories
-            // Text(
-            //   'Kategori Menu',
-            //   style: TextStyle(
-            //     fontSize: 18,
-            //     fontWeight: FontWeight.bold,
-            //     color: Colors.grey[800],
-            //   ),
-            // ),
-            // const SizedBox(height: 12),
-
-            // GridView.builder(
-            //   shrinkWrap: true,
-            //   physics: const NeverScrollableScrollPhysics(),
-            //   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            //     crossAxisCount: 2,
-            //     childAspectRatio: 1.2,
-            //     crossAxisSpacing: 12,
-            //     mainAxisSpacing: 12,
-            //   ),
-            //   itemCount: menuCategories.length,
-            //   itemBuilder: (context, index) {
-            //     final category = menuCategories[index];
-            //     return _buildCategoryCard(category);
-            //   },
-            // ),
           ],
         ),
       ),
@@ -347,10 +365,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => NewOrderScreen()),
+            MaterialPageRoute(builder: (context) => ProductListScreen()),
           );
         },
-        backgroundColor: Colors.brown[600],
+        backgroundColor: Colors.blue[600],
         icon: const Icon(Icons.add, color: Colors.white),
         label: const Text(
           'Pesanan Baru',
@@ -410,7 +428,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Panggil fungsi navigasi dengan route yang sesuai
             _handleQuickActionTap(action['route']);
           },
           child: Padding(
@@ -435,63 +452,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.grey[800],
                   ),
                   textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoryCard(Map<String, dynamic> category) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {},
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: category['color'].withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    category['icon'],
-                    color: category['color'],
-                    size: 28,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  category['title'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${category['items']} item',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                 ),
               ],
             ),

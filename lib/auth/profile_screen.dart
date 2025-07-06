@@ -9,66 +9,81 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-Future<void> _loadUserData() async {
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('auth_token');
-  final userName = prefs.getString('user_username') ?? '';
-  final name = prefs.getString('user_name') ?? '';
-  final telp = prefs.getString('user_telp') ?? '';
-  final email = prefs.getString('user_email') ?? '';
-}
-
 class _ProfileScreenState extends State<ProfileScreen> {
   String? userName;
   String? name;
   String? telp;
   String? email;
+  String? role;
+  bool _isLoading = true;
 
-  // final Map<String, dynamic> userProfile = {
-  //   'name': 'Ahmad Kasir',
-  //   'role': 'Kasir Utama',
-  //   'email': 'ahmad.kasir@warkopos.com',
-  //   'phone': '+62 812-3456-7890',
-  //   'joinDate': '15 Januari 2024',
-  //   'avatar': null,
-  // };
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      print(token);
+
+      if (token == null) {
+        // Jika tidak ada token, redirect ke login
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+          );
+        }
+        return;
+      }
+
+      setState(() {
+        userName = prefs.getString('user_username') ?? '';
+        name = prefs.getString('user_name') ?? '';
+        telp = prefs.getString('user_telp') ?? '';
+        email = prefs.getString('user_email') ?? '';
+        role = prefs.getString('user_role') ?? '';
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memuat data profil')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_name', name ?? '');
+      await prefs.setString('user_email', email ?? '');
+      await prefs.setString('user_telp', telp ?? '');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal menyimpan data profil')),
+        );
+      }
+    }
+  }
 
   final List<Map<String, dynamic>> menuOptions = [
     // {
-    //   'title': 'Edit Profil',
-    //   'subtitle': 'Ubah informasi pribadi',
-    //   'icon': Icons.edit,
-    //   'color': Colors.blue,
-    //   'route': 'edit_profile',
+    //   'title': 'Backup Data',
+    //   'subtitle': 'Cadangkan data transaksi',
+    //   'icon': Icons.backup,
+    //   'color': Colors.teal,
+    //   'route': 'backup',
     // },
-    // {
-    //   'title': 'Ganti Password',
-    //   'subtitle': 'Keamanan akun',
-    //   'icon': Icons.lock,
-    //   'color': Colors.orange,
-    //   'route': 'change_password',
-    // },
-    // {
-    //   'title': 'Notifikasi',
-    //   'subtitle': 'Atur preferensi notifikasi',
-    //   'icon': Icons.notifications,
-    //   'color': Colors.purple,
-    //   'route': 'notifications',
-    // },
-    // {
-    //   'title': 'Bahasa',
-    //   'subtitle': 'Indonesia',
-    //   'icon': Icons.language,
-    //   'color': Colors.green,
-    //   'route': 'language',
-    // },
-    {
-      'title': 'Backup Data',
-      'subtitle': 'Cadangkan data transaksi',
-      'icon': Icons.backup,
-      'color': Colors.teal,
-      'route': 'backup',
-    },
     {
       'title': 'Tentang Aplikasi',
       'subtitle': 'Versi 1.0.0',
@@ -121,33 +136,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder:
           (context) => AlertDialog(
             title: const Text('Edit Profil'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Nama Lengkap',
-                    border: OutlineInputBorder(),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nama Lengkap',
+                      border: OutlineInputBorder(),
+                    ),
+                    textCapitalization: TextCapitalization.words,
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: emailController,
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(
-                    labelText: 'No. Telepon',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'No. Telepon',
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.phone,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -155,17 +175,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: const Text('Batal'),
               ),
               ElevatedButton(
-                onPressed: () {
-                  // Implementasi save data
+                onPressed: () async {
+                  // Validasi input
+                  if (nameController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Nama tidak boleh kosong')),
+                    );
+                    return;
+                  }
+
+                  if (emailController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Email tidak boleh kosong')),
+                    );
+                    return;
+                  }
+
+                  // Validasi format email sederhana
+                  final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+                  if (!emailRegex.hasMatch(emailController.text.trim())) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Format email tidak valid')),
+                    );
+                    return;
+                  }
+
                   setState(() {
-                    name = nameController.text;
-                    email = emailController.text;
-                    telp = phoneController.text;
+                    name = nameController.text.trim();
+                    email = emailController.text.trim();
+                    telp = phoneController.text.trim();
                   });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Profil berhasil diperbarui')),
-                  );
+
+                  await _saveUserData();
+
+                  if (mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Profil berhasil diperbarui'),
+                      ),
+                    );
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown[600],
@@ -188,36 +238,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder:
           (context) => AlertDialog(
             title: const Text('Ganti Password'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: currentPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password Lama',
-                    border: OutlineInputBorder(),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: currentPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password Lama',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: newPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password Baru',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Password Baru',
+                      border: OutlineInputBorder(),
+                      helperText: 'Minimal 6 karakter',
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: confirmPasswordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Konfirmasi Password Baru',
-                    border: OutlineInputBorder(),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: confirmPasswordController,
+                    obscureText: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Konfirmasi Password Baru',
+                      border: OutlineInputBorder(),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             actions: [
               TextButton(
@@ -226,20 +279,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
-                  // Implementasi change password
-                  if (newPasswordController.text ==
-                      confirmPasswordController.text) {
-                    Navigator.pop(context);
+                  // Validasi input
+                  if (currentPasswordController.text.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password berhasil diubah')),
+                      const SnackBar(
+                        content: Text('Password lama harus diisi'),
+                      ),
                     );
-                  } else {
+                    return;
+                  }
+
+                  if (newPasswordController.text.length < 6) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Password baru minimal 6 karakter'),
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (newPasswordController.text !=
+                      confirmPasswordController.text) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Konfirmasi password tidak cocok'),
                       ),
                     );
+                    return;
                   }
+
+                  // TODO: Implementasi API call untuk mengubah password
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Password berhasil diubah')),
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown[600],
@@ -304,29 +377,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  // Simulasi proses backup
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder:
-                        (context) => const AlertDialog(
-                          content: Row(
-                            children: [
-                              CircularProgressIndicator(),
-                              SizedBox(width: 20),
-                              Text('Membuat backup...'),
-                            ],
-                          ),
-                        ),
-                  );
-
-                  // Simulasi delay
-                  Future.delayed(const Duration(seconds: 2), () {
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Backup berhasil dibuat')),
-                    );
-                  });
+                  _performBackup();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown[600],
@@ -337,6 +388,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ],
           ),
     );
+  }
+
+  void _performBackup() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => const AlertDialog(
+            content: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(width: 20),
+                Text('Membuat backup...'),
+              ],
+            ),
+          ),
+    );
+
+    // Simulasi proses backup
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Backup berhasil dibuat')));
+      }
+    });
   }
 
   void _showAboutDialog() {
@@ -379,13 +458,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    if (mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => LoginScreen()),
-      );
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Gagal logout')));
+      }
     }
   }
 
@@ -405,6 +493,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               ElevatedButton(
                 onPressed: () {
+                  Navigator.pop(context);
                   _logout();
                 },
                 style: ElevatedButton.styleFrom(
@@ -461,6 +550,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Profil',
+            style: TextStyle(
+              color: Colors.black87,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black87),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -489,34 +601,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Avatar
-                  // Container(
-                  //   width: 100,
-                  //   height: 100,
-                  //   decoration: BoxDecoration(
-                  //     color: Colors.brown[100],
-                  //     shape: BoxShape.circle,
-                  //     border: Border.all(color: Colors.brown[300]!, width: 3),
-                  //   ),
-                  //   child:
-                  //       userProfile['avatar'] != null
-                  //           ? ClipOval(
-                  //             child: Image.asset(
-                  //               userProfile['avatar'],
-                  //               fit: BoxFit.cover,
-                  //             ),
-                  //           )
-                  //           : Icon(
-                  //             Icons.person,
-                  //             size: 50,
-                  //             color: Colors.brown[600],
-                  //           ),
-                  // ),
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.brown[100],
+                    child: Icon(
+                      Icons.person,
+                      size: 40,
+                      color: Colors.brown[600],
+                    ),
+                  ),
                   const SizedBox(height: 16),
-
-                  // Name & Role
                   Text(
-                    name ?? '',
+                    name?.isNotEmpty == true ? name! : 'Nama Pengguna',
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -534,7 +630,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      email ?? '',
+                      role?.isNotEmpty == true ? '$role' : '@role',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.brown[600],
@@ -543,34 +639,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Contact Info
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      _buildContactInfo(Icons.email, email ?? ''),
+                      _buildContactInfo(
+                        Icons.email,
+                        email?.isNotEmpty == true
+                            ? email!
+                            : 'Email tidak diset',
+                      ),
                       Container(width: 1, height: 30, color: Colors.grey[300]),
-                      _buildContactInfo(Icons.phone, telp ?? ''),
+                      _buildContactInfo(
+                        Icons.phone,
+                        telp?.isNotEmpty == true
+                            ? telp!
+                            : 'Telepon tidak diset',
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Join Date
-                  // Row(
-                  //   mainAxisAlignment: MainAxisAlignment.center,
-                  //   children: [
-                  //     Icon(
-                  //       Icons.calendar_today,
-                  //       size: 16,
-                  //       color: Colors.grey[600],
-                  //     ),
-                  //     const SizedBox(width: 6),
-                  //     Text(
-                  //       'Bergabung ${userProfile['joinDate']}',
-                  //       style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-                  //     ),
-                  //   ],
-                  // ),
                 ],
               ),
             ),
@@ -687,9 +773,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
             text,
             style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             textAlign: TextAlign.center,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildActionButton(
+    IconData icon,
+    String label,
+    VoidCallback onPressed,
+  ) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.brown[600],
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+      icon: Icon(icon, size: 16),
+      label: Text(label, style: const TextStyle(fontSize: 12)),
     );
   }
 }
