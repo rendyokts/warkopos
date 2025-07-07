@@ -43,7 +43,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
 ================================
 Kode Transaksi: ${transaksi['kode_transaksi']}
 Tanggal: $formattedDate
-Kasir: ${transaksi['name'] ?? 'Admin'}
+Kasir: ${transaksi['name'] ?? 'Kasir'}
 
 DETAIL PEMBELIAN:
 --------------------------------
@@ -655,8 +655,7 @@ Made with ❤️ by "YANG JAWA JAWA AJA"
                           Expanded(
                             child: OutlinedButton(
                               onPressed: () {
-                                Navigator.pop(context);
-                                Navigator.pop(context);
+                                _showSnackBar('Fitur akan segera hadir');
                               },
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide(color: Colors.grey.shade400),
