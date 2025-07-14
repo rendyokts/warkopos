@@ -4,6 +4,7 @@ import 'package:warkopos/auth/profile_screen.dart';
 import 'package:warkopos/const/base_url.dart';
 import 'package:warkopos/models/transaksi_harian.dart';
 import 'package:warkopos/order/new_order_screen.dart';
+import 'package:warkopos/transaction_history/sales_history_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -98,9 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'history':
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => _buildPlaceholderScreen('Riwayat Pesanan'),
-          ),
+          MaterialPageRoute(builder: (context) => SalesHistoryScreen()),
         );
         break;
       case 'report':
