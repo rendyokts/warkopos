@@ -218,7 +218,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown[600],
+                  backgroundColor: Colors.blue[600],
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Simpan'),
@@ -315,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown[600],
+                  backgroundColor: Colors.blue[600],
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Ubah'),
@@ -380,7 +380,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _performBackup();
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.brown[600],
+                  backgroundColor: Colors.blue[600],
                   foregroundColor: Colors.white,
                 ),
                 child: const Text('Backup'),
@@ -427,7 +427,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.local_cafe, size: 64, color: Colors.brown[600]),
+                Icon(Icons.local_cafe, size: 64, color: Colors.blue[600]),
                 const SizedBox(height: 16),
                 const Text(
                   'Warkop POS',
@@ -511,7 +511,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        backgroundColor: Colors.brown[600],
+        backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
       ),
       body: Center(
@@ -537,7 +537,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ElevatedButton(
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown[600],
+                backgroundColor: Colors.blue[600],
                 foregroundColor: Colors.white,
               ),
               child: const Text('Kembali'),
@@ -603,11 +603,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   CircleAvatar(
                     radius: 40,
-                    backgroundColor: Colors.brown[100],
+                    backgroundColor: Colors.blue[100],
                     child: Icon(
                       Icons.person,
                       size: 40,
-                      color: Colors.brown[600],
+                      color: Colors.blue[600],
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -626,14 +626,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.brown[100],
+                      color: Colors.blue[100],
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
                       role?.isNotEmpty == true ? '$role' : '@role',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.brown[600],
+                        color: Colors.blue[600],
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -789,7 +789,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return ElevatedButton.icon(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.brown[600],
+        backgroundColor: Colors.blue[600],
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

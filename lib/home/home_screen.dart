@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late Future<TransaksiHariIniResponse?> _futureData;
   String? token;
+  bool _isRefreshing = false;
 
   final List<Map<String, dynamic>> quickActions = [
     {
@@ -27,17 +28,17 @@ class _HomeScreenState extends State<HomeScreen> {
       'route': 'new_order',
     },
     {
-      'title': 'Riwayat',
+      'title': 'Riwayat Pesanan',
       'icon': Icons.history,
       'color': Colors.teal,
       'route': 'history',
     },
-    {
-      'title': 'Laporan',
-      'icon': Icons.assessment,
-      'color': Colors.indigo,
-      'route': 'report',
-    },
+    // {
+    //   'title': 'Laporan',
+    //   'icon': Icons.assessment,
+    //   'color': Colors.indigo,
+    //   'route': 'report',
+    // },
   ];
 
   Future<void> _loadUserData() async {
@@ -58,6 +59,67 @@ class _HomeScreenState extends State<HomeScreen> {
       setState(() {
         _futureData = fetchTotalTransaksiHarian(token!);
       });
+    }
+  }
+
+  // Method untuk melakukan refresh data
+  Future<void> _refreshData() async {
+    if (token == null) return;
+
+    setState(() {
+      _isRefreshing = true;
+    });
+
+    try {
+      await _loadUserData(); // Refresh token jika diperlukan
+      if (token != null) {
+        setState(() {
+          _futureData = fetchTotalTransaksiHarian(token!);
+        });
+      }
+
+      // Menunggu sampai data selesai di-fetch
+      await _futureData;
+
+      // Menampilkan pesan sukses
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Data berhasil diperbarui'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      // Menampilkan pesan error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Gagal memperbarui data'),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
@@ -174,23 +236,51 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               'Warkop Aceng',
               style: TextStyle(
-                color: Colors.brown[800],
+                color: Colors.blue[600],
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            Text(
-              'Sistem Kasir',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            ),
+            // Text(
+            //   'Sistem Kasir',
+            //   style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            // ),
           ],
         ),
         actions: [
+          // Tombol refresh
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.green.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(30),
+              ),
+              child: IconButton(
+                onPressed: _isRefreshing ? null : _refreshData,
+                icon:
+                    _isRefreshing
+                        ? SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.green,
+                            ),
+                          ),
+                        )
+                        : Icon(Icons.refresh, color: Colors.green),
+                tooltip: 'Refresh Data',
+              ),
+            ),
+          ),
+          // Tombol profile
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: Container(
@@ -211,153 +301,178 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blue[400]!, Colors.blue[600]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.brown.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: SingleChildScrollView(
+          physics: AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue[400]!, Colors.blue[600]!],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.wb_sunny, color: Colors.orange[300], size: 24),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Selamat Datang!',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Siap melayani pelanggan hari ini',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.9),
-                      fontSize: 14,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.brown.withOpacity(0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Gunakan FutureBuilder untuk menampilkan data dari API
-                  FutureBuilder<TransaksiHariIniResponse?>(
-                    future: _futureData,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return Row(
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
                           children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                'Pesanan Hari Ini',
-                                '...',
-                                Icons.shopping_cart,
-                              ),
+                            Icon(
+                              Icons.wb_sunny,
+                              color: Colors.orange[300],
+                              size: 24,
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Total Penjualan',
-                                '...',
-                                Icons.monetization_on,
+                            const SizedBox(width: 8),
+                            Text(
+                              'Selamat Datang!',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
-                        );
-                      } else if (snapshot.hasError || snapshot.data == null) {
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                'Pesanan Hari Ini',
-                                '0',
-                                Icons.shopping_cart,
+                        ),
+                        if (_isRefreshing)
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.white,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Total Penjualan',
-                                'Rp 0',
-                                Icons.monetization_on,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Siap melayani pelanggan hari ini',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Gunakan FutureBuilder untuk menampilkan data dari API
+                    FutureBuilder<TransaksiHariIniResponse?>(
+                      future: _futureData,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Pesanan Hari Ini',
+                                  '...',
+                                  Icons.shopping_cart,
+                                ),
                               ),
-                            ),
-                          ],
-                        );
-                      } else {
-                        final data = snapshot.data!;
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: _buildStatCard(
-                                'Pesanan Hari Ini',
-                                '${data.jumlahTransaksi ?? 0}',
-                                Icons.shopping_cart,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Total Penjualan',
+                                  '...',
+                                  Icons.monetization_on,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _buildStatCard(
-                                'Total Penjualan',
-                                'Rp ${data.totalTransaksi ?? 0}',
-                                Icons.monetization_on,
+                            ],
+                          );
+                        } else if (snapshot.hasError || snapshot.data == null) {
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Pesanan Hari Ini',
+                                  '0',
+                                  Icons.shopping_cart,
+                                ),
                               ),
-                            ),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-                ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Total Penjualan',
+                                  'Rp 0',
+                                  Icons.monetization_on,
+                                ),
+                              ),
+                            ],
+                          );
+                        } else {
+                          final data = snapshot.data!;
+                          return Row(
+                            children: [
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Pesanan Hari Ini',
+                                  '${data.jumlahTransaksi ?? 0}',
+                                  Icons.shopping_cart,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildStatCard(
+                                  'Total Penjualan',
+                                  'Rp ${data.totalTransaksi ?? 0}',
+                                  Icons.monetization_on,
+                                ),
+                              ),
+                            ],
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Aksi Cepat',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
+              const SizedBox(height: 24),
+              // Text(
+              //   'Aksi Cepat',
+              //   style: TextStyle(
+              //     fontSize: 18,
+              //     fontWeight: FontWeight.bold,
+              //     color: Colors.grey[800],
+              //   ),
+              // ),
+              const SizedBox(height: 12),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 0.9,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: quickActions.length,
+                itemBuilder: (context, index) {
+                  final action = quickActions[index];
+                  return _buildQuickActionCard(action);
+                },
               ),
-            ),
-            const SizedBox(height: 12),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.9,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: quickActions.length,
-              itemBuilder: (context, index) {
-                final action = quickActions[index];
-                return _buildQuickActionCard(action);
-              },
-            ),
-            const SizedBox(height: 24),
-          ],
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -418,7 +533,7 @@ class _HomeScreenState extends State<HomeScreen> {
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             blurRadius: 10,
-            offset: const Offset(0, 2),
+            offset: Offset(2, 2),
           ),
         ],
       ),
