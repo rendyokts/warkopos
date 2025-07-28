@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warkopos/auth/profile_screen.dart';
 import 'package:warkopos/const/base_url.dart';
@@ -44,7 +45,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUserData() async {
     final prefs = await SharedPreferences.getInstance();
     token = prefs.getString('auth_token');
-    // print(token);
   }
 
   @override
@@ -62,7 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Method untuk melakukan refresh data
   Future<void> _refreshData() async {
     if (token == null) return;
 
@@ -71,17 +70,15 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     try {
-      await _loadUserData(); // Refresh token jika diperlukan
+      await _loadUserData();
       if (token != null) {
         setState(() {
           _futureData = fetchTotalTransaksiHarian(token!);
         });
       }
 
-      // Menunggu sampai data selesai di-fetch
       await _futureData;
 
-      // Menampilkan pesan sukses
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -98,7 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e) {
-      // Menampilkan pesan error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -164,68 +160,11 @@ class _HomeScreenState extends State<HomeScreen> {
           MaterialPageRoute(builder: (context) => SalesHistoryScreen()),
         );
         break;
-      case 'report':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => _buildPlaceholderScreen('Laporan Penjualan'),
-          ),
-        );
-        break;
-      case 'settings':
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => _buildPlaceholderScreen('Pengaturan'),
-          ),
-        );
-        break;
       default:
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Halaman belum tersedia')));
     }
-  }
-
-  Widget _buildPlaceholderScreen(String title) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.blueAccent[600],
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.construction, size: 80, color: Colors.grey[400]),
-            SizedBox(height: 16),
-            Text(
-              'Halaman $title',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Sedang dalam pengembangan',
-              style: TextStyle(fontSize: 16, color: Colors.grey[500]),
-            ),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.brown[600],
-                foregroundColor: Colors.white,
-              ),
-              child: Text('Kembali'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override
@@ -240,20 +179,15 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               'Warkop Aceng',
-              style: TextStyle(
+              style: GoogleFonts.poppins(
                 color: Colors.blue[600],
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            // Text(
-            //   'Sistem Kasir',
-            //   style: TextStyle(color: Colors.grey[600], fontSize: 12),
-            // ),
           ],
         ),
         actions: [
-          // Tombol refresh
           Container(
             margin: const EdgeInsets.only(right: 8),
             child: Container(
@@ -280,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          // Tombol profile
           Container(
             margin: const EdgeInsets.only(right: 16),
             child: Container(
@@ -343,7 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             const SizedBox(width: 8),
                             Text(
                               'Selamat Datang!',
-                              style: TextStyle(
+                              style: GoogleFonts.poppins(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -367,13 +300,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'Siap melayani pelanggan hari ini',
-                      style: TextStyle(
+                      style: GoogleFonts.poppins(
                         color: Colors.white.withOpacity(0.9),
                         fontSize: 14,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Gunakan FutureBuilder untuk menampilkan data dari API
                     FutureBuilder<TransaksiHariIniResponse?>(
                       future: _futureData,
                       builder: (context, snapshot) {
@@ -445,15 +377,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
-              // Text(
-              //   'Aksi Cepat',
-              //   style: TextStyle(
-              //     fontSize: 18,
-              //     fontWeight: FontWeight.bold,
-              //     color: Colors.grey[800],
-              //   ),
-              // ),
               const SizedBox(height: 12),
               GridView.builder(
                 shrinkWrap: true,
@@ -484,9 +407,9 @@ class _HomeScreenState extends State<HomeScreen> {
         },
         backgroundColor: Colors.blue[600],
         icon: const Icon(Icons.add, color: Colors.white),
-        label: const Text(
+        label: Text(
           'Pesanan Baru',
-          style: TextStyle(color: Colors.white),
+          style: GoogleFonts.poppins(color: Colors.white),
         ),
       ),
     );
@@ -506,7 +429,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
+            style: GoogleFonts.poppins(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -514,7 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Text(
             title,
-            style: TextStyle(
+            style: GoogleFonts.poppins(
               color: Colors.white.withOpacity(0.8),
               fontSize: 12,
             ),
@@ -560,7 +483,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 Text(
                   action['title'],
-                  style: TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: Colors.grey[800],

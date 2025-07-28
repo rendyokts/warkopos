@@ -6,7 +6,6 @@ import 'package:warkopos/auth/auth_helper.dart';
 import 'package:http/http.dart' as http;
 
 class ApiService {
-
   // Method untuk mengambil semua transaksi dari rentang tanggal
   static Future<List<SaleTransaction>> getAllTransactions({
     DateTime? startDate,
@@ -20,11 +19,17 @@ class ApiService {
       DateTime end = endDate ?? DateTime.now();
 
       // Loop untuk setiap tanggal dalam rentang
-      for (DateTime date = start; date.isBefore(end.add(Duration(days: 1))); date = date.add(Duration(days: 1))) {
+      for (
+        DateTime date = start;
+        date.isBefore(end.add(Duration(days: 1)));
+        date = date.add(Duration(days: 1))
+      ) {
         String formattedDate = _formatDate(date);
 
         try {
-          List<SaleTransaction> dailyTransactions = await getTransactionList(tanggal: formattedDate);
+          List<SaleTransaction> dailyTransactions = await getTransactionList(
+            tanggal: formattedDate,
+          );
           allTransactions.addAll(dailyTransactions);
         } catch (e) {
           print("Error getting transactions for date $formattedDate: $e");
@@ -38,10 +43,12 @@ class ApiService {
     }
   }
 
-  // Method untuk mengambil transaksi berdasarkan tanggal tertentu
-  static Future<List<SaleTransaction>> getTransactionList({String? tanggal}) async {
+  static Future<List<SaleTransaction>> getTransactionList({
+    String? tanggal,
+  }) async {
     try {
       String url = '${BaseUrl.baseUrl}/transaksi/list';
+      // String url = '${BaseUrl.baseNgrok}/transaksi/list';
       if (tanggal != null && tanggal.isNotEmpty) {
         url += '?tanggal=$tanggal';
       }
@@ -75,15 +82,23 @@ class ApiService {
   static Future<List<SaleTransaction>> getThisMonthTransactions() async {
     DateTime now = DateTime.now();
     DateTime startOfMonth = DateTime(now.year, now.month, 1);
-    DateTime endOfMonth = DateTime(now.year, now.month + 1, 1).subtract(Duration(days: 1));
+    DateTime endOfMonth = DateTime(
+      now.year,
+      now.month + 1,
+      1,
+    ).subtract(Duration(days: 1));
 
-    return await getAllTransactions(startDate: startOfMonth, endDate: endOfMonth);
+    return await getAllTransactions(
+      startDate: startOfMonth,
+      endDate: endOfMonth,
+    );
   }
 
   // Method untuk mengambil transaksi hari ini
   static Future<List<SaleTransaction>> getTodayTransactions() async {
     DateTime today = DateTime.now();
-    return await getAllTransactions(startDate: today, endDate: today);
+    String formattedDate = _formatDate(today);
+    return await getTransactionList(tanggal: formattedDate);
   }
 
   // Method untuk mengambil transaksi minggu ini
@@ -109,7 +124,9 @@ class ApiService {
   }
 
   // Method untuk mengambil transaksi dengan batasan jumlah hari ke belakang
-  static Future<List<SaleTransaction>> getRecentTransactions({int days = 7}) async {
+  static Future<List<SaleTransaction>> getRecentTransactions({
+    int days = 7,
+  }) async {
     DateTime endDate = DateTime.now();
     DateTime startDate = endDate.subtract(Duration(days: days));
 
