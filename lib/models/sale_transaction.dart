@@ -1,5 +1,3 @@
-// import 'package:flutter/foundation.dart';
-
 class SaleTransaction {
   final int id;
   final String kodeTransaksi;
@@ -17,9 +15,6 @@ class SaleTransaction {
     required this.userId,
 
   });
-
-  // Hitung total item
-  // int get totalItems => items.fold(0, (sum, item) => sum + item.quantity);
 
   factory SaleTransaction.fromJson(Map<String, dynamic> json) {
     return SaleTransaction(

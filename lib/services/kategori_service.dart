@@ -32,6 +32,7 @@ class ApiService {
     try {
       final response = await http.get(
         Uri.parse('${BaseUrl.baseUrl}/list_produk'),
+        // Uri.parse('${BaseUrl.baseNgrok}/list_produk'),
         headers: {'Content-Type': 'application/json'},
       );
 

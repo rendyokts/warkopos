@@ -59,7 +59,6 @@ class Produk {
     try {
       harga = double.parse(json['harga_barang'].toString());
     } catch (e) {
-      // print('ERROR: Gagal parsing harga untuk ${json['nama_barang']}: ${json['harga_barang']}');
       harga = 0.0;
     }
 

@@ -197,6 +197,7 @@ Made with ❤️ by "YANG JAWA JAWA AJA"
     try {
       final response = await http.get(
         Uri.parse('${BaseUrl.baseUrl}/list_produk'),
+        // Uri.parse('${BaseUrl.baseNgrok}/list_produk'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',
@@ -399,6 +400,7 @@ Made with ❤️ by "YANG JAWA JAWA AJA"
 
       final response = await http.post(
         Uri.parse('${BaseUrl.baseUrl}/transaksi'),
+        // Uri.parse('${BaseUrl.baseNgrok}/transaksi'),
         headers: {
           'Authorization': 'Bearer $token',
           'Accept': 'application/json',

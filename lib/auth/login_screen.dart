@@ -55,11 +55,9 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  // PERBAIKAN: Sesuaikan dengan struktur response API
   Future<void> _saveUserData(Map<String, dynamic> responseData) async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Token dan token_type ada di dalam data
     await prefs.setString('auth_token', responseData['data']['token'] ?? '');
     await prefs.setString(
       'token_type',
@@ -98,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen>
         );
 
         final responseData = json.decode(response.body);
-        print('Response Data: $responseData'); // Debug print
+        print('Response Data: $responseData');
 
         if (response.statusCode == 200 && responseData['success'] == true) {
           await _saveUserData(responseData);
@@ -111,14 +109,12 @@ class _LoginScreenState extends State<LoginScreen>
             );
           }
         } else {
-          // PERBAIKAN: Handle error response dengan lebih baik
           String errorMessage = responseData['message'] ?? 'Login gagal';
           if (mounted) {
             _showSnackBar(errorMessage, Colors.red);
           }
         }
       } catch (e) {
-        print('Login Error: $e'); // Debug print
         if (mounted) {
           _showSnackBar(
             'Terjadi kesalahan jaringan. Periksa koneksi internet Anda.',
@@ -174,24 +170,14 @@ class _LoginScreenState extends State<LoginScreen>
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.brown[400]!, Colors.brown[600]!],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
                             borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.brown.withOpacity(0.3),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
                           ),
-                          child: const Icon(
-                            Icons.local_cafe,
-                            size: 60,
-                            color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Image.asset(
+                              'assets/logo.jpeg',
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -200,17 +186,17 @@ class _LoginScreenState extends State<LoginScreen>
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
-                            color: Colors.brown[800],
+                            color: Colors.blue[800],
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Sistem Kasir Modern',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
-                        ),
+                        // const SizedBox(height: 8),
+                        // Text(
+                        //   'Sistem Kasir Modern',
+                        //   style: TextStyle(
+                        //     fontSize: 16,
+                        //     color: Colors.grey[600],
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
@@ -241,7 +227,7 @@ class _LoginScreenState extends State<LoginScreen>
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
+                              color: Colors.blue[800],
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -339,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen>
                             child: ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.brown[600],
+                                backgroundColor: Colors.blue[600],
                                 foregroundColor: Colors.white,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
